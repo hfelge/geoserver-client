@@ -4,18 +4,21 @@ namespace Hfelge\GeoServerClient;
 
 class GeoServerClient
 {
-    protected string $baseUrl;
-    protected string $username;
-    protected string $password;
+    public WorkspaceManager $workspaceManager;
 
-    public function __construct( string $baseUrl, string $username, string $password )
-    {
-        $this->baseUrl  = rtrim( $baseUrl, '/' );
-        $this->username = $username;
-        $this->password = $password;
+
+    public function __construct(
+        protected string $baseUrl,
+        protected string $username,
+        protected string $password,
+    ) {
+        $this->baseUrl = rtrim( $baseUrl, '/' );
+
+        $this->workspaceManager = new WorkspaceManager( $this );
+
     }
 
-    protected function request( string $method, string $url, ?string $data = NULL, array $headers = [] ) : array
+    public function request( string $method, string $url, ?string $data = NULL, array $headers = [] ) : array
     {
         $ch = curl_init();
 
@@ -46,24 +49,5 @@ class GeoServerClient
             'status' => $httpCode,
             'body'   => $response,
         ];
-    }
-
-    public function getWorkspaces() : array
-    {
-        $response = $this->request( 'GET', '/rest/workspaces.json' );
-
-        if ( $response['status'] !== 200 ) {
-            throw new \RuntimeException( 'Failed to get workspaces: ' . $response['body'] );
-        }
-
-        return json_decode( $response['body'], TRUE );
-    }
-
-    public function createWorkspace( string $workspace ) : bool
-    {
-        $payload  = json_encode( ['workspace' => ['name' => $workspace]] );
-        $response = $this->request( 'POST', '/rest/workspaces', $payload );
-
-        return $response['status'] === 201;
     }
 }
