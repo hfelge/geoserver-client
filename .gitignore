@@ -1,0 +1,19 @@
+# Composer
+/vendor/
+composer.lock
+
+# Lokale Entwicklungsumgebungen
+.ddev/
+.idea/
+
+# Lokale Testdatei
+/test.php
+
+# PHPUnit
+/phpunit.xml
+/phpunit.xml.dist
+/.phpunit.result.cache
+
+# Sonstiges
+*.log
+.env

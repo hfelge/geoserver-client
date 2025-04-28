@@ -1,0 +1,25 @@
+{
+  "name": "hfelge/geoserver-client",
+  "description": "Ein moderner PHP-Client zur einfachen Kommunikation mit der GeoServer REST-API.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Henry Felgner",
+      "email": "henryfelgner@gmx.de"
+    }
+  ],
+  "require": {
+    "php": "^8.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "Hfelge\\GeoServerClient\\": "src/"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^12.1.0"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
