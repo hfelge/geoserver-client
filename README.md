@@ -4,9 +4,9 @@ A modern, lightweight PHP client for interacting with the GeoServer REST API.
 
 ## Features
 
-- Retrieve workspaces
-- Create new workspaces
-- (Planned) Manage datastores, layers, and WFS-T transactions
+- Manage GeoServer Workspaces (create, read, update, delete)
+- Manage GeoServer Datastores (create PostGIS stores, read, update, delete)
+- Future: Layer management and WFS-T transaction support
 
 ## Installation
 
@@ -25,12 +25,17 @@ use Hfelge\GeoServerClient\GeoServerClient;
 
 $client = new GeoServerClient('https://your-geoserver-url/geoserver', 'admin', 'geoserver');
 
-// Create a new workspace
-$client->createWorkspace('my_workspace');
+// Workspace example
+$client->workspaceManager->createWorkspace('my_workspace');
 
-// Get a list of all workspaces
-$workspaces = $client->getWorkspaces();
-print_r($workspaces);
+// Datastore example
+$client->datastoreManager->createPostGISDatastore('my_workspace', 'my_postgis_store', [
+    'host' => 'localhost',
+    'port' => '5432',
+    'database' => 'gisdb',
+    'user' => 'geo_user',
+    'passwd' => 'secret'
+]);
 ```
 
 ## Requirements
