@@ -47,4 +47,16 @@ class WorkspaceManagerTest extends TestCase
 
         $this->assertFalse($result);
     }
+
+    #[Test]
+    public function it_returns_workspace_data(): void
+    {
+        $this->mockClient->method('request')
+            ->with('GET', '/rest/workspaces/testworkspace.json')
+            ->willReturn(['status' => 200, 'body' => json_encode(['workspace' => ['name' => 'testworkspace']])]);
+
+        $workspace = $this->workspaceManager->getWorkspace('testworkspace');
+
+        $this->assertEquals('testworkspace', $workspace['workspace']['name']);
+    }
 }

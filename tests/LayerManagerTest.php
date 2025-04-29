@@ -66,4 +66,17 @@ class LayerManagerTest extends TestCase
 
         $this->assertTrue($result);
     }
+
+    #[Test]
+    public function it_returns_layer_data(): void
+    {
+        $this->mockClient->method('request')
+            ->with('GET', '/rest/layers/testlayer.json')
+            ->willReturn(['status' => 200, 'body' => json_encode(['layer' => ['name' => 'testlayer']])]);
+
+        $layer = $this->layerManager->getLayer('testlayer');
+
+        $this->assertEquals('testlayer', $layer['layer']['name']);
+    }
+
 }

@@ -73,4 +73,17 @@ class DatastoreManagerTest extends TestCase
 
         $this->assertTrue($result);
     }
+
+    #[Test]
+    public function it_returns_datastore_data(): void
+    {
+        $this->mockClient->method('request')
+            ->with('GET', '/rest/workspaces/testworkspace/datastores/teststore.json')
+            ->willReturn(['status' => 200, 'body' => json_encode(['dataStore' => ['name' => 'teststore']])]);
+
+        $datastore = $this->datastoreManager->getDatastore('testworkspace', 'teststore');
+
+        $this->assertEquals('teststore', $datastore['dataStore']['name']);
+    }
+
 }

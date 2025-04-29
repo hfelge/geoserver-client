@@ -19,6 +19,17 @@ class LayerManager
         return json_decode($response['body'], true);
     }
 
+    public function getLayer(string $layerName): array
+    {
+        $response = $this->client->request('GET', "/rest/layers/{$layerName}.json");
+
+        if ($response['status'] !== 200) {
+            throw new \RuntimeException('Failed to get layer: ' . $response['body']);
+        }
+
+        return json_decode($response['body'], true);
+    }
+
     public function layerExists(string $layerName): bool
     {
         $response = $this->client->request('GET', "/rest/layers/{$layerName}.json");

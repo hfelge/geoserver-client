@@ -22,6 +22,17 @@ class DatastoreManager
         return json_decode( $response['body'], TRUE );
     }
 
+    public function getDatastore(string $workspace, string $datastore): array
+    {
+        $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}.json");
+
+        if ($response['status'] !== 200) {
+            throw new \RuntimeException('Failed to get datastore: ' . $response['body']);
+        }
+
+        return json_decode($response['body'], true);
+    }
+
     public function datastoreExists( string $workspace, string $datastore ) : bool
     {
         $response = $this->client->request( 'GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}.json" );

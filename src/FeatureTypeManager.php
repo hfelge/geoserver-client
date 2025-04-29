@@ -19,6 +19,17 @@ class FeatureTypeManager
         return json_decode($response['body'], true);
     }
 
+    public function getFeatureType(string $workspace, string $datastore, string $featureType): array
+    {
+        $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$featureType}.json");
+
+        if ($response['status'] !== 200) {
+            throw new \RuntimeException('Failed to get feature type: ' . $response['body']);
+        }
+
+        return json_decode($response['body'], true);
+    }
+
     public function featureTypeExists(string $workspace, string $datastore, string $featureType): bool
     {
         $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$featureType}.json");

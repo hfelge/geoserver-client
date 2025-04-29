@@ -19,6 +19,17 @@ class WorkspaceManager
         return json_decode($response['body'], true);
     }
 
+    public function getWorkspace(string $name): array
+    {
+        $response = $this->client->request('GET', "/rest/workspaces/{$name}.json");
+
+        if ($response['status'] !== 200) {
+            throw new \RuntimeException('Failed to get workspace: ' . $response['body']);
+        }
+
+        return json_decode($response['body'], true);
+    }
+
     public function workspaceExists(string $workspace): bool
     {
         $response = $this->client->request('GET', "/rest/workspaces/{$workspace}.json");

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-04-28
+### Added
+- Added getWorkspace(string $name) to WorkspaceManager
+- Added getDatastore(string $workspace, string $datastore) to DatastoreManager
+- Added getFeatureType(string $workspace, string $datastore, string $featureType) to FeatureTypeManager
+- Added getLayer(string $layerName) to LayerManager
+- Added getStyle(string $styleName) to StyleManager
+- Added corresponding PHPUnit 12 tests for all new methods
+
+### Notes
+- Now fully supports both list and single item retrieval for Workspaces, Datastores, FeatureTypes, Layers, and Styles.
+
 ## [1.2.0] - 2025-04-28
 ### Added
 - `FeatureTypeManager` with full CRUD support and `featureTypeExists()`

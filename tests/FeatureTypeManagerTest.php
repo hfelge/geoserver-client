@@ -71,4 +71,17 @@ class FeatureTypeManagerTest extends TestCase
 
         $this->assertTrue($result);
     }
+
+    #[Test]
+    public function it_returns_featuretype_data(): void
+    {
+        $this->mockClient->method('request')
+            ->with('GET', '/rest/workspaces/testworkspace/datastores/teststore/featuretypes/testfeaturetype.json')
+            ->willReturn(['status' => 200, 'body' => json_encode(['featureType' => ['name' => 'testfeaturetype']])]);
+
+        $featureType = $this->featureTypeManager->getFeatureType('testworkspace', 'teststore', 'testfeaturetype');
+
+        $this->assertEquals('testfeaturetype', $featureType['featureType']['name']);
+    }
+
 }
