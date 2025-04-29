@@ -6,6 +6,8 @@ class GeoServerClient
 {
     public WorkspaceManager $workspaceManager;
     public DatastoreManager $datastoreManager;
+    public FeatureTypeManager $featureTypeManager;
+    public LayerManager $layerManager;
 
 
     public function __construct(
@@ -17,7 +19,8 @@ class GeoServerClient
 
         $this->workspaceManager = new WorkspaceManager( $this );
         $this->datastoreManager = new DatastoreManager( $this );
-
+        $this->featureTypeManager = new FeatureTypeManager($this);
+        $this->layerManager = new LayerManager($this);
     }
 
     public function request( string $method, string $url, ?string $data = NULL, array $headers = [] ) : array
