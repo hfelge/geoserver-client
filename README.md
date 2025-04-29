@@ -4,9 +4,13 @@ A modern, lightweight PHP client for interacting with the GeoServer REST API.
 
 ## Features
 
-- Manage GeoServer Workspaces (create, read, update, delete)
-- Manage GeoServer Datastores (create PostGIS stores, read, update, delete)
-- Future: Layer management and WFS-T transaction support
+- Manage GeoServer **Workspaces** (get, exists, create, update, delete)
+- Manage GeoServer **Datastores** (get, exists, createPostGIS, update, delete)
+- Manage GeoServer **FeatureTypes** (get, exists, create, update, delete)
+- Manage GeoServer **Layers** (get, exists, publish, update, delete)
+- Full PHPUnit 12 test coverage
+- PSR-4 ready and composer-installable
+- Future: WFS-T transaction support
 
 ## Installation
 
@@ -25,17 +29,41 @@ use Hfelge\GeoServerClient\GeoServerClient;
 
 $client = new GeoServerClient('https://your-geoserver-url/geoserver', 'admin', 'geoserver');
 
-// Workspace example
-$client->workspaceManager->createWorkspace('my_workspace');
+// === WORKSPACES ===
+$workspaces = $client->workspaceManager->getWorkspaces();
+if (!$client->workspaceManager->workspaceExists('example_ws')) {
+    $client->workspaceManager->createWorkspace('example_ws');
+}
 
-// Datastore example
-$client->datastoreManager->createPostGISDatastore('my_workspace', 'my_postgis_store', [
-    'host' => 'localhost',
-    'port' => '5432',
-    'database' => 'gisdb',
-    'user' => 'geo_user',
-    'passwd' => 'secret'
-]);
+// === DATASTORES ===
+$datastores = $client->datastoreManager->getDatastores('example_ws');
+if (!$client->datastoreManager->datastoreExists('example_ws', 'example_ds')) {
+    $client->datastoreManager->createPostGISDatastore('example_ws', 'example_ds', [
+        'host' => 'localhost',
+        'port' => '5432',
+        'database' => 'gisdb',
+        'user' => 'geo_user',
+        'passwd' => 'secret'
+    ]);
+}
+
+// === FEATURETYPES ===
+$fts = $client->featureTypeManager->getFeatureTypes('example_ws', 'example_ds');
+if (!$client->featureTypeManager->featureTypeExists('example_ws', 'example_ds', 'stadtgrenzen')) {
+    $client->featureTypeManager->createFeatureType('example_ws', 'example_ds', [
+        'name' => 'stadtgrenzen',
+        'nativeName' => 'stadtgrenzen',
+        'title' => 'Stadtgrenzen',
+        'srs' => 'EPSG:4326'
+    ]);
+}
+
+// === LAYERS ===
+$layers = $client->layerManager->getLayers();
+if (!$client->layerManager->layerExists('stadtgrenzen')) {
+    $client->layerManager->publishLayer('example_ws', 'example_ds', 'stadtgrenzen');
+}
+
 ```
 
 ## Requirements
