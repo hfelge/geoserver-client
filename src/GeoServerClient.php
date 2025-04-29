@@ -5,6 +5,7 @@ namespace Hfelge\GeoServerClient;
 class GeoServerClient
 {
     public WorkspaceManager $workspaceManager;
+    public DatastoreManager $datastoreManager;
 
 
     public function __construct(
@@ -15,6 +16,7 @@ class GeoServerClient
         $this->baseUrl = rtrim( $baseUrl, '/' );
 
         $this->workspaceManager = new WorkspaceManager( $this );
+        $this->datastoreManager = new DatastoreManager( $this );
 
     }
 
