@@ -25,8 +25,6 @@ composer require hfelge/geoserver-client
 ```php
 <?php
 require 'vendor/autoload.php';
-<?php
-require 'vendor/autoload.php';
 
 use Hfelge\GeoServerClient\GeoServerClient;
 
