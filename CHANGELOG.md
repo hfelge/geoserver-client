@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-04-28
+### Added
+- `FeatureTypeManager` with full CRUD support and `featureTypeExists()`
+- `LayerManager` with full CRUD support and `layerExists()`
+- PHPUnit 12 tests for both FeatureTypeManager and LayerManager
+
+### Changed
+- GeoServerClient now initializes `featureTypeManager` and `layerManager` automatically
+
+### Notes
+- This completes full CRUD support for Workspaces, Datastores, FeatureTypes, and Layers
+- WFS-T and StyleManager support is planned for a future release
+
 ## [1.0.0] - 2025-04-28
 ### Added
 - Initial stable release of the GeoServerClient PHP library.
