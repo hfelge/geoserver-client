@@ -4,11 +4,11 @@ namespace Hfelge\GeoServerClient;
 
 class GeoServerClient
 {
-    public WorkspaceManager $workspaceManager;
-    public DatastoreManager $datastoreManager;
+    public WorkspaceManager   $workspaceManager;
+    public DatastoreManager   $datastoreManager;
     public FeatureTypeManager $featureTypeManager;
-    public LayerManager $layerManager;
-    public StyleManager $styleManager;
+    public LayerManager       $layerManager;
+    public StyleManager       $styleManager;
 
 
     public function __construct(
@@ -18,43 +18,50 @@ class GeoServerClient
     ) {
         $this->baseUrl = rtrim( $baseUrl, '/' );
 
-        $this->workspaceManager = new WorkspaceManager( $this );
-        $this->datastoreManager = new DatastoreManager( $this );
-        $this->featureTypeManager = new FeatureTypeManager($this);
-        $this->layerManager = new LayerManager($this);
-        $this->styleManager = new StyleManager($this);
+        $this->workspaceManager   = new WorkspaceManager( $this );
+        $this->datastoreManager   = new DatastoreManager( $this );
+        $this->featureTypeManager = new FeatureTypeManager( $this );
+        $this->layerManager       = new LayerManager( $this );
+        $this->styleManager       = new StyleManager( $this );
     }
 
-    public function request( string $method, string $url, ?string $data = NULL, array $headers = [] ) : array
+    public function request( string $method, string $url, ?string $body = NULL, array $headers = [] ) : array
     {
-        $ch = curl_init();
+        $ch = curl_init( $this->baseUrl . $url );
 
-        curl_setopt( $ch, CURLOPT_URL, $this->baseUrl . $url );
-        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, TRUE );
-        curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, $method );
-        curl_setopt( $ch, CURLOPT_USERPWD, "$this->username:$this->password" );
+        $defaultHeaders = [
+            'Content-Type: application/json',
+            'Accept: application/json',
+        ];
 
-        if ( $data !== NULL ) {
-            curl_setopt( $ch, CURLOPT_POSTFIELDS, $data );
-            $headers[] = 'Content-Type: application/json';
+        curl_setopt_array( $ch, [
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_CUSTOMREQUEST  => strtoupper( $method ),
+            CURLOPT_USERPWD        => "{$this->username}:{$this->password}",
+            CURLOPT_HTTPHEADER     => array_merge( $defaultHeaders, $headers ),
+        ] );
+
+        if ( $body !== NULL ) {
+            curl_setopt( $ch, CURLOPT_POSTFIELDS, $body );
         }
 
-        if ( !empty( $headers ) ) {
-            curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
-        }
-
-        $response = curl_exec( $ch );
-        $httpCode = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
-
-        if ( curl_errno( $ch ) ) {
-            throw new \RuntimeException( 'Curl error: ' . curl_error( $ch ) );
-        }
+        $responseBody = curl_exec( $ch );
+        $statusCode   = curl_getinfo( $ch, CURLINFO_RESPONSE_CODE );
+        $error        = curl_error( $ch );
 
         curl_close( $ch );
 
+        if ( $error !== '' ) {
+            throw new GeoServerException( 0, $url, "CURL error: $error" );
+        }
+
+        if ( $statusCode >= 400 ) {
+            throw new GeoServerException( $statusCode, $url, $responseBody ?? '' );
+        }
+
         return [
-            'status' => $httpCode,
-            'body'   => $response,
+            'status' => $statusCode,
+            'body'   => $responseBody,
         ];
     }
 }
