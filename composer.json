@@ -14,7 +14,8 @@
   },
   "autoload": {
     "psr-4": {
-      "Hfelge\\GeoServerClient\\": "src/"
+      "Hfelge\\GeoServerClient\\": "src/",
+      "Hfelge\\GeoServerClient\\Tests\\": "tests/"
     }
   },
   "require-dev": {
