@@ -5,72 +5,90 @@ namespace Hfelge\GeoServerClient;
 class FeatureTypeManager
 {
     public function __construct(
-        protected GeoServerClient $client
+        protected GeoServerClient $client,
     ) {}
 
     public function getFeatureTypes(string $workspace, string $datastore): array
     {
-        $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes.json");
-
-        if ($response['status'] !== 200) {
-            throw new \RuntimeException('Failed to get feature types: ' . $response['body']);
+        try {
+            $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes.json");
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            throw $e;
         }
-
-        return json_decode($response['body'], true);
     }
 
-    public function getFeatureType(string $workspace, string $datastore, string $featureType): array
+    public function getFeatureType(string $workspace, string $datastore, string $name): array|false
     {
-        $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$featureType}.json");
-
-        if ($response['status'] !== 200) {
-            throw new \RuntimeException('Failed to get feature type: ' . $response['body']);
+        try {
+            $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$name}.json");
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
-
-        return json_decode($response['body'], true);
     }
 
-    public function featureTypeExists(string $workspace, string $datastore, string $featureType): bool
+    public function featureTypeExists(string $workspace, string $datastore, string $name): bool
     {
-        $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$featureType}.json");
-
-        if ($response['status'] === 200) {
+        try {
+            $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$name}.json");
             return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
-
-        if ($response['status'] === 404) {
-            return false;
-        }
-
-        throw new \RuntimeException('Unexpected response checking feature type existence: ' . $response['body']);
     }
 
     public function createFeatureType(string $workspace, string $datastore, array $definition): bool
     {
-        $payload = json_encode([
-                                   'featureType' => $definition
-                               ]);
+        $payload = json_encode(['featureType' => $definition]);
 
-        $response = $this->client->request('POST', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes", $payload);
-
-        return $response['status'] === 201;
+        try {
+            $this->client->request('POST', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes", $payload);
+            return true;
+        } catch (GeoServerException $e) {
+            if (
+                $e->statusCode === 409 ||
+                ($e->statusCode === 500 && str_contains($e->getMessage(), 'already exists'))
+            ) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
-    public function updateFeatureType(string $workspace, string $datastore, string $featureType, array $updates): bool
+    public function updateFeatureType(string $workspace, string $datastore, string $name, array $updates): bool
     {
-        $payload = json_encode([
-                                   'featureType' => $updates
-                               ]);
+        $payload = json_encode(['featureType' => $updates]);
 
-        $response = $this->client->request('PUT', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$featureType}", $payload);
-
-        return $response['status'] === 200;
+        try {
+            $this->client->request('PUT', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$name}", $payload);
+            return true;
+        } catch (GeoServerException $e) {
+            if (in_array($e->statusCode, [400, 404], true)) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
-    public function deleteFeatureType(string $workspace, string $datastore, string $featureType): bool
+    public function deleteFeatureType(string $workspace, string $datastore, string $name, bool $recurse = true): bool
     {
-        $response = $this->client->request('DELETE', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$featureType}");
+        $query = $recurse ? '?recurse=true' : '';
 
-        return $response['status'] === 200;
+        try {
+            $this->client->request('DELETE', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes/{$name}{$query}");
+            return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
+        }
     }
 }

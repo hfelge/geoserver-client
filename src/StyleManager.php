@@ -5,78 +5,136 @@ namespace Hfelge\GeoServerClient;
 class StyleManager
 {
     public function __construct(
-        protected GeoServerClient $client
+        protected GeoServerClient $client,
     ) {}
 
     public function getStyles(): array
     {
-        $response = $this->client->request('GET', '/rest/styles.json');
-
-        if ($response['status'] !== 200) {
-            throw new \RuntimeException('Failed to get styles: ' . $response['body']);
+        try {
+            $response = $this->client->request('GET', '/rest/styles.json');
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            throw $e;
         }
-
-        return json_decode($response['body'], true);
     }
 
-    public function getStyle(string $styleName): array
+    public function getStyle(string $styleName): array|false
     {
-        $response = $this->client->request('GET', "/rest/styles/{$styleName}.json");
-
-        if ($response['status'] !== 200) {
-            throw new \RuntimeException('Failed to get style: ' . $response['body']);
+        try {
+            $response = $this->client->request('GET', "/rest/styles/{$styleName}.json");
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
-
-        return json_decode($response['body'], true);
     }
 
     public function styleExists(string $styleName): bool
     {
-        $response = $this->client->request('GET', "/rest/styles/{$styleName}.json");
-
-        if ($response['status'] === 200) {
+        try {
+            $this->client->request('GET', "/rest/styles/{$styleName}.json");
             return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
-
-        if ($response['status'] === 404) {
-            return false;
-        }
-
-        throw new \RuntimeException('Unexpected response checking style existence: ' . $response['body']);
     }
 
-    public function createStyle(string $name, string $sldContent): bool
+    public function styleExistsInWorkspace(string $workspace, string $styleName): bool
     {
-        $payload = [
-            'file' => $sldContent
-        ];
+        try {
+            $this->client->request('GET', "/rest/workspaces/{$workspace}/styles/{$styleName}.sld");
+            return true;
+        } catch (GeoServerException $e) {
 
-        $response = $this->client->request(
-            'POST',
-            '/rest/styles',
-            $sldContent,
-            ['Content-Type: application/vnd.ogc.sld+xml']
-        );
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
+        }
+    }
 
-        return $response['status'] === 201;
+    public function createWorkspaceStyle(string $workspace, string $styleName, string $sldContent): bool
+    {
+        try {
+            $this->client->request(
+                'POST',
+                "/rest/workspaces/{$workspace}/styles",
+                $sldContent,
+                [
+                    'Content-Type: application/vnd.ogc.sld+xml',
+                    'Slug: ' . $styleName . '.sld'
+                ]
+            );
+            return true;
+        } catch (GeoServerException $e) {
+            if (
+                $e->statusCode === 409 ||
+                ($e->statusCode === 403 && str_contains($e->getMessage(), 'already exists'))
+            ) {
+                return false;
+            }
+            throw $e;
+        }
+    }
+
+    public function assignStyleToLayer(string $layerName, string $styleName): bool
+    {
+        try {
+            $this->client->request(
+                'POST',
+                "/rest/layers/{$layerName}/styles",
+                json_encode([
+                                'style' => [
+                                    'name' => $styleName
+                                ]
+                            ]),
+                ['Content-Type: application/json']
+            );
+            return true;
+        } catch (GeoServerException $e) {
+            if (in_array($e->statusCode, [400, 404, 406], true)) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     public function updateStyle(string $name, string $sldContent): bool
     {
-        $response = $this->client->request(
-            'PUT',
-            "/rest/styles/{$name}",
-            $sldContent,
-            ['Content-Type: application/vnd.ogc.sld+xml']
-        );
-
-        return $response['status'] === 200;
+        try {
+            $this->client->request(
+                'PUT',
+                "/rest/styles/{$name}",
+                $sldContent,
+                ['Content-Type: application/vnd.ogc.sld+xml']
+            );
+            return true;
+        } catch (GeoServerException $e) {
+            if (
+                in_array($e->statusCode, [400, 404], true) ||
+                str_contains($e->getMessage(), 'getResource() because "original" is null')
+            ) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     public function deleteStyle(string $name): bool
     {
-        $response = $this->client->request('DELETE', "/rest/styles/{$name}");
-
-        return $response['status'] === 200;
+        try {
+            $this->client->request('DELETE', "/rest/styles/{$name}");
+            return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
+        }
     }
 }

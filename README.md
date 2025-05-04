@@ -1,17 +1,21 @@
 # GeoServer Client (PHP)
 
-A modern, lightweight PHP client for interacting with the GeoServer REST API.
+A modern, lightweight PHP client for interacting with the GeoServer REST API (REST & SLD Upload).
 
 ## Features
 
-- Manage GeoServer **Workspaces** (get all, get one, exists, create, update, delete)
-- Manage GeoServer **Datastores** (get all, get one, exists, createPostGIS, update, delete)
-- Manage GeoServer **FeatureTypes** (get all, get one, exists, create, update, delete)
-- Manage GeoServer **Layers** (get all, get one, exists, publish, update, delete)
-- Manage GeoServer **Styles** (get all, get one, exists, create, update, delete)
-- Full PHPUnit 12 test coverage
+- Manage GeoServer **Workspaces** (`get`, `exists`, `create`, `update`, `delete`)
+- Manage GeoServer **Datastores** (`get`, `exists`, `createPostGIS`, `update`, `delete`)
+- Manage GeoServer **FeatureTypes** (`get`, `exists`, `create`, `update`, `delete`)
+- Manage GeoServer **Layers** (`get`, `exists`, `publish`, `update`, `delete`)
+- Manage GeoServer **Styles**:
+    - `createWorkspaceStyle()` (SLD upload via Slug)
+    - `assignStyleToLayer()`
+    - `updateStyle()`, `deleteStyle()`, `styleExists()`
+- Robust error handling with `GeoServerException`
+- GeoServer availability check via `isAvailable()`
+- 100% PHPUnit 12 test coverage
 - PSR-4 ready and composer-installable
-- Future: WFS-T transaction support
 
 ## Installation
 
@@ -24,62 +28,53 @@ composer require hfelge/geoserver-client
 ## Usage Example
 ```php
 <?php
-require 'vendor/autoload.php';
 
 use Hfelge\GeoServerClient\GeoServerClient;
 
-$client = new GeoServerClient('https://your-geoserver-url/geoserver', 'admin', 'geoserver');
+$client = new GeoServerClient('http://localhost:8080/geoserver', 'admin', 'geoserver');
 
 // === WORKSPACES ===
-$workspaces = $client->workspaceManager->getWorkspaces();
-$workspace = $client->workspaceManager->getWorkspace('example_ws');
 if (!$client->workspaceManager->workspaceExists('example_ws')) {
     $client->workspaceManager->createWorkspace('example_ws');
 }
 
 // === DATASTORES ===
-$datastores = $client->datastoreManager->getDatastores('example_ws');
-$datastore = $client->datastoreManager->getDatastore('example_ws', 'example_ds');
 if (!$client->datastoreManager->datastoreExists('example_ws', 'example_ds')) {
     $client->datastoreManager->createPostGISDatastore('example_ws', 'example_ds', [
-        'host' => 'localhost',
-        'port' => '5432',
-        'database' => 'gisdb',
-        'user' => 'geo_user',
-        'passwd' => 'secret'
+        'host'     => 'localhost',
+        'port'     => '5432',
+        'database' => 'gis',
+        'user'     => 'geo_user',
+        'passwd'   => 'secret',
     ]);
 }
 
 // === FEATURETYPES ===
-$fts = $client->featureTypeManager->getFeatureTypes('example_ws', 'example_ds');
-$featureType = $client->featureTypeManager->getFeatureType('example_ws', 'example_ds', 'stadtgrenzen');
 if (!$client->featureTypeManager->featureTypeExists('example_ws', 'example_ds', 'stadtgrenzen')) {
     $client->featureTypeManager->createFeatureType('example_ws', 'example_ds', [
-        'name' => 'stadtgrenzen',
+        'name'       => 'stadtgrenzen',
         'nativeName' => 'stadtgrenzen',
-        'title' => 'Stadtgrenzen',
-        'srs' => 'EPSG:4326'
+        'title'      => 'Stadtgrenzen',
+        'srs'        => 'EPSG:4326',
     ]);
 }
 
 // === LAYERS ===
-$layers = $client->layerManager->getLayers();
-$layer = $client->layerManager->getLayer('stadtgrenzen');
 if (!$client->layerManager->layerExists('stadtgrenzen')) {
-    $client->layerManager->publishLayer('example_ws', 'example_ds', 'stadtgrenzen');
+    $client->layerManager->publishLayer('stadtgrenzen');
 }
 
 // === STYLES ===
-$styles = $client->styleManager->getStyles();
-$style = $client->styleManager->getStyle('default_point');
-if (!$client->styleManager->styleExists('default_point')) {
-    $client->styleManager->createStyle('default_point', file_get_contents('path/to/your.sld'));
-}
+$sld = file_get_contents(__DIR__ . '/style.sld');
+$client->styleManager->createWorkspaceStyle('example_ws', 'my_custom_style', $sld);
+$client->styleManager->assignStyleToLayer('stadtgrenzen', 'my_custom_style');
+
 ```
 
 ## Requirements
 + PHP 8.3 or higher
 + GeoServer instance with REST API access
++ Optional: Docker/DDEV setup for local testing
 
 ## Project Structure
 
@@ -87,7 +82,6 @@ if (!$client->styleManager->styleExists('default_point')) {
 src/    → Contains the core library
 tests/  → Contains PHPUnit tests
 ```
-
 
 ## Development
 Run PHPUnit tests:

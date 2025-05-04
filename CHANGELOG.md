@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-05-02
+
+### Added
+- `StyleManager::createWorkspaceStyle()` – upload SLD styles using `Slug:` and `Content-Type` header
+- `StyleManager::assignStyleToLayer()` – assign a style to a layer via REST
+- `StyleManager::updateStyle()`, `deleteStyle()`, `styleExists()`, `getStyle()`
+- `GeoServerClient::isAvailable()` – check if GeoServer is reachable (with optional caching)
+- Live tests using a local GeoServer instance (DDEV-compatible), auto-skipped when unavailable
+- Unified `GeoServerException` used in all managers
+- 100% test coverage with PHPUnit 12
+
+### Changed
+- `StyleManager` now uses `POST` with raw SLD content only (replaces old JSON+PUT combination)
+- Error codes 403, 404, 406 are now properly interpreted (e.g., on style assignment)
+- All managers return consistent results: `true`, `false`, `array`, or `GeoServerException`
+
+### Fixed
+- `styleExists()` now supports workspace-specific styles (via optional `workspace` context)
+- `GeoServerClient::request()` merges headers safely (custom headers take precedence)
+
 ## [1.3.0] - 2025-04-28
 ### Added
 - Added getWorkspace(string $name) to WorkspaceManager

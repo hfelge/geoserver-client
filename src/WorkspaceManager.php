@@ -5,67 +5,87 @@ namespace Hfelge\GeoServerClient;
 class WorkspaceManager
 {
     public function __construct(
-        protected GeoServerClient $client
+        protected GeoServerClient $client,
     ) {}
 
     public function getWorkspaces(): array
     {
-        $response = $this->client->request('GET', '/rest/workspaces.json');
-
-        if ($response['status'] !== 200) {
-            throw new \RuntimeException('Failed to get workspaces: ' . $response['body']);
+        try {
+            $response = $this->client->request('GET', '/rest/workspaces.json');
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            throw $e;
         }
-
-        return json_decode($response['body'], true);
     }
 
-    public function getWorkspace(string $name): array
+    public function getWorkspace(string $name): array|false
     {
-        $response = $this->client->request('GET', "/rest/workspaces/{$name}.json");
-
-        if ($response['status'] !== 200) {
-            throw new \RuntimeException('Failed to get workspace: ' . $response['body']);
+        try {
+            $response = $this->client->request('GET', "/rest/workspaces/{$name}.json");
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
-
-        return json_decode($response['body'], true);
     }
 
     public function workspaceExists(string $workspace): bool
     {
-        $response = $this->client->request('GET', "/rest/workspaces/{$workspace}.json");
-
-        if ($response['status'] === 200) {
+        try {
+            $this->client->request('GET', "/rest/workspaces/{$workspace}.json");
             return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
-
-        if ($response['status'] === 404) {
-            return false;
-        }
-
-        throw new \RuntimeException('Unexpected response checking workspace existence: ' . $response['body']);
     }
 
     public function createWorkspace(string $workspace): bool
     {
         $payload = json_encode(['workspace' => ['name' => $workspace]]);
-        $response = $this->client->request('POST', '/rest/workspaces', $payload);
 
-        return $response['status'] === 201;
+        try {
+            $this->client->request('POST', '/rest/workspaces', $payload);
+            return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 409) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     public function updateWorkspace(string $workspace, array $updates): bool
     {
         $payload = json_encode(['workspace' => $updates]);
-        $response = $this->client->request('PUT', "/rest/workspaces/{$workspace}", $payload);
 
-        return $response['status'] === 200;
+        try {
+            $this->client->request('PUT', "/rest/workspaces/{$workspace}", $payload);
+            return true;
+        } catch (GeoServerException $e) {
+            if (in_array($e->statusCode, [400, 404], true)) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     public function deleteWorkspace(string $workspace, bool $recurse = false): bool
     {
         $query = $recurse ? '?recurse=true' : '';
-        $response = $this->client->request('DELETE', "/rest/workspaces/{$workspace}{$query}");
 
-        return $response['status'] === 200;
+        try {
+            $this->client->request('DELETE', "/rest/workspaces/{$workspace}{$query}");
+            return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
+        }
     }
 }

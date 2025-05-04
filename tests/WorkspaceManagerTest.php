@@ -2,61 +2,106 @@
 
 declare(strict_types=1);
 
+use Hfelge\GeoServerClient\Tests\TestCaseWithGeoServerClient;
+use Hfelge\GeoServerClient\GeoServerException;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
-use Hfelge\GeoServerClient\GeoServerClient;
-use Hfelge\GeoServerClient\WorkspaceManager;
 
-class WorkspaceManagerTest extends TestCase
+class WorkspaceManagerTest extends TestCaseWithGeoServerClient
 {
-    protected WorkspaceManager $workspaceManager;
-    protected GeoServerClient $mockClient;
+    protected string $workspace = 'phpunit_ws';
 
-    protected function setUp(): void
+    protected function tearDown(): void
     {
-        $this->mockClient = $this->createMock(GeoServerClient::class);
-        $this->workspaceManager = new WorkspaceManager($this->mockClient);
+        if ($this->client->workspaceManager->workspaceExists($this->workspace)) {
+            $this->client->workspaceManager->deleteWorkspace($this->workspace, true);
+        }
     }
 
     #[Test]
-    public function it_can_be_instantiated(): void
+    public function it_can_list_all_workspaces(): void
     {
-        $this->assertInstanceOf(WorkspaceManager::class, $this->workspaceManager);
+        $result = $this->client->workspaceManager->getWorkspaces();
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('workspaces', $result);
     }
 
     #[Test]
-    public function it_returns_true_if_workspace_exists(): void
+    public function it_can_create_a_workspace(): void
     {
-        $this->mockClient->method('request')
-            ->with('GET', '/rest/workspaces/testworkspace.json')
-            ->willReturn(['status' => 200, 'body' => '']);
+        $success = $this->client->workspaceManager->createWorkspace($this->workspace);
+        $this->assertTrue($success);
+        $this->assertTrue($this->client->workspaceManager->workspaceExists($this->workspace));
+    }
 
-        $result = $this->workspaceManager->workspaceExists('testworkspace');
+    #[Test]
+    public function it_returns_false_when_creating_duplicate_workspace(): void
+    {
+        $this->client->workspaceManager->createWorkspace($this->workspace);
+        $success = $this->client->workspaceManager->createWorkspace($this->workspace);
+        $this->assertFalse($success);
+    }
 
-        $this->assertTrue($result);
+    #[Test]
+    public function it_can_get_a_specific_workspace(): void
+    {
+        $this->client->workspaceManager->createWorkspace($this->workspace);
+        $ws = $this->client->workspaceManager->getWorkspace($this->workspace);
+        $this->assertEquals($this->workspace, $ws['workspace']['name']);
     }
 
     #[Test]
     public function it_returns_false_if_workspace_does_not_exist(): void
     {
-        $this->mockClient->method('request')
-            ->with('GET', '/rest/workspaces/testworkspace.json')
-            ->willReturn(['status' => 404, 'body' => '']);
+        $exists = $this->client->workspaceManager->workspaceExists('nonexistent_ws');
+        $this->assertFalse($exists);
 
-        $result = $this->workspaceManager->workspaceExists('testworkspace');
+        $ws = $this->client->workspaceManager->getWorkspace('nonexistent_ws');
+        $this->assertFalse($ws);
+    }
 
+    #[Test]
+    public function it_can_update_a_workspace(): void
+    {
+        $this->client->workspaceManager->createWorkspace($this->workspace);
+        $result = $this->client->workspaceManager->updateWorkspace($this->workspace, ['name' => $this->workspace]);
+        $this->assertTrue($result);
+    }
+
+    #[Test]
+    public function it_returns_false_when_updating_non_existing_workspace(): void
+    {
+        $result = $this->client->workspaceManager->updateWorkspace('nonexistent_ws', ['name' => 'whatever']);
         $this->assertFalse($result);
     }
 
     #[Test]
-    public function it_returns_workspace_data(): void
+    public function it_can_delete_a_workspace(): void
     {
-        $this->mockClient->method('request')
-            ->with('GET', '/rest/workspaces/testworkspace.json')
-            ->willReturn(['status' => 200, 'body' => json_encode(['workspace' => ['name' => 'testworkspace']])]);
+        $this->client->workspaceManager->createWorkspace($this->workspace);
+        $result = $this->client->workspaceManager->deleteWorkspace($this->workspace);
+        $this->assertTrue($result);
+        $this->assertFalse($this->client->workspaceManager->workspaceExists($this->workspace));
+    }
 
-        $workspace = $this->workspaceManager->getWorkspace('testworkspace');
+    #[Test]
+    public function it_returns_false_when_deleting_non_existing_workspace(): void
+    {
+        $result = $this->client->workspaceManager->deleteWorkspace('nonexistent_ws');
+        $this->assertFalse($result);
+    }
 
-        $this->assertEquals('testworkspace', $workspace['workspace']['name']);
+    #[Test]
+    public function it_can_delete_a_workspace_recursively(): void
+    {
+        $this->client->workspaceManager->createWorkspace($this->workspace);
+        $result = $this->client->workspaceManager->deleteWorkspace($this->workspace, true);
+        $this->assertTrue($result);
+    }
+
+    #[Test]
+    public function it_returns_false_for_invalid_workspace_name(): void
+    {
+        $result = $this->client->workspaceManager->getWorkspace('@@@');
+        $this->assertFalse($result);
     }
 }

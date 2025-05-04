@@ -2,88 +2,152 @@
 
 declare(strict_types=1);
 
+use Hfelge\GeoServerClient\Tests\TestCaseWithGeoServerClient;
+use Hfelge\GeoServerClient\GeoServerException;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
-use Hfelge\GeoServerClient\GeoServerClient;
-use Hfelge\GeoServerClient\DatastoreManager;
 
-class DatastoreManagerTest extends TestCase
+class DatastoreManagerTest extends TestCaseWithGeoServerClient
 {
-    protected DatastoreManager $datastoreManager;
-    protected GeoServerClient $mockClient;
+    protected string $workspace = 'phpunit_ws';
+    protected string $datastore = 'phpunit_ds';
 
     protected function setUp(): void
     {
-        $this->mockClient = $this->createMock(GeoServerClient::class);
-        $this->datastoreManager = new DatastoreManager($this->mockClient);
+        parent::setUp();
+
+        if (!$this->client->workspaceManager->workspaceExists($this->workspace)) {
+            $this->client->workspaceManager->createWorkspace($this->workspace);
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        $this->client->datastoreManager->deleteDatastore($this->workspace, $this->datastore);
+        $this->client->workspaceManager->deleteWorkspace($this->workspace, true);
     }
 
     #[Test]
-    public function it_can_be_instantiated(): void
+    public function it_can_list_datastores(): void
     {
-        $this->assertInstanceOf(DatastoreManager::class, $this->datastoreManager);
+        $result = $this->client->datastoreManager->getDatastores($this->workspace);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('dataStores', $result);
     }
 
     #[Test]
-    public function it_returns_true_if_datastore_exists(): void
+    public function it_can_create_a_postgis_datastore(): void
     {
-        $this->mockClient->method('request')
-            ->with('GET', '/rest/workspaces/testworkspace/datastores/teststore.json')
-            ->willReturn(['status' => 200, 'body' => '']);
+        $created = $this->client->datastoreManager->createPostGISDatastore($this->workspace, $this->datastore, [
+            'host'     => getenv( 'GEOSERVER_DB_HOST' ) ?: 'db',
+            'port'     => getenv( 'GEOSERVER_DB_PORT' ) ?: '5432',
+            'database' => getenv( 'GEOSERVER_DB_NAME' ) ?: 'db',
+            'user'     => getenv( 'GEOSERVER_DB_USER' ) ?: 'db',
+            'passwd'   => getenv( 'GEOSERVER_DB_PASSWORD' ) ?: 'db',
+        ]);
 
-        $result = $this->datastoreManager->datastoreExists('testworkspace', 'teststore');
-
-        $this->assertTrue($result);
+        $this->assertTrue($created);
+        $this->assertTrue($this->client->datastoreManager->datastoreExists($this->workspace, $this->datastore));
     }
 
     #[Test]
-    public function it_returns_false_if_datastore_does_not_exist(): void
+    public function it_returns_false_when_creating_existing_datastore(): void
     {
-        $this->mockClient->method('request')
-            ->with('GET', '/rest/workspaces/testworkspace/datastores/teststore.json')
-            ->willReturn(['status' => 404, 'body' => '']);
+        $this->client->datastoreManager->createPostGISDatastore($this->workspace, $this->datastore, [
+            'host'     => getenv( 'GEOSERVER_DB_HOST' ) ?: 'db',
+            'port'     => getenv( 'GEOSERVER_DB_PORT' ) ?: '5432',
+            'database' => getenv( 'GEOSERVER_DB_NAME' ) ?: 'db',
+            'user'     => getenv( 'GEOSERVER_DB_USER' ) ?: 'db',
+            'passwd'   => getenv( 'GEOSERVER_DB_PASSWORD' ) ?: 'db',
+        ]);
 
-        $result = $this->datastoreManager->datastoreExists('testworkspace', 'teststore');
+        $secondTry = $this->client->datastoreManager->createPostGISDatastore($this->workspace, $this->datastore, [
+            'host'     => getenv( 'GEOSERVER_DB_HOST' ) ?: 'db',
+            'port'     => getenv( 'GEOSERVER_DB_PORT' ) ?: '5432',
+            'database' => getenv( 'GEOSERVER_DB_NAME' ) ?: 'db',
+            'user'     => getenv( 'GEOSERVER_DB_USER' ) ?: 'db',
+            'passwd'   => getenv( 'GEOSERVER_DB_PASSWORD' ) ?: 'db',
+        ]);
 
+        $this->assertFalse($secondTry);
+    }
+
+    #[Test]
+    public function it_can_get_a_datastore(): void
+    {
+        $this->client->datastoreManager->createPostGISDatastore($this->workspace, $this->datastore, [
+            'host'     => getenv( 'GEOSERVER_DB_HOST' ) ?: 'db',
+            'port'     => getenv( 'GEOSERVER_DB_PORT' ) ?: '5432',
+            'database' => getenv( 'GEOSERVER_DB_NAME' ) ?: 'db',
+            'user'     => getenv( 'GEOSERVER_DB_USER' ) ?: 'db',
+            'passwd'   => getenv( 'GEOSERVER_DB_PASSWORD' ) ?: 'db',
+        ]);
+
+        $ds = $this->client->datastoreManager->getDatastore($this->workspace, $this->datastore);
+        $this->assertEquals($this->datastore, $ds['dataStore']['name']);
+    }
+
+    #[Test]
+    public function it_returns_false_for_non_existing_datastore(): void
+    {
+        $result = $this->client->datastoreManager->getDatastore($this->workspace, 'doesnotexist');
         $this->assertFalse($result);
     }
 
     #[Test]
-    public function it_creates_postgis_datastore_successfully(): void
+    public function it_can_update_a_datastore(): void
     {
-        $this->mockClient->method('request')
-            ->with(
-                'POST',
-                '/rest/workspaces/testworkspace/datastores',
-                $this->callback(function ($payload) {
-                    $data = json_decode($payload, true);
-                    return isset($data['dataStore']['connectionParameters']['dbtype'])
-                           && $data['dataStore']['connectionParameters']['dbtype'] === 'postgis';
-                })
-            )
-            ->willReturn(['status' => 201, 'body' => '']);
+        $this->client->datastoreManager->createPostGISDatastore($this->workspace, $this->datastore, [
+            'host'     => getenv( 'GEOSERVER_DB_HOST' ) ?: 'db',
+            'port'     => getenv( 'GEOSERVER_DB_PORT' ) ?: '5432',
+            'database' => getenv( 'GEOSERVER_DB_NAME' ) ?: 'db',
+            'user'     => getenv( 'GEOSERVER_DB_USER' ) ?: 'db',
+            'passwd'   => getenv( 'GEOSERVER_DB_PASSWORD' ) ?: 'db',
+        ]);
 
-        $result = $this->datastoreManager->createPostGISDatastore('testworkspace', 'teststore', [
-            'host' => 'localhost',
-            'port' => '5432',
-            'database' => 'gisdb',
-            'user' => 'geo_user',
-            'passwd' => 'secret'
+        $result = $this->client->datastoreManager->updateDatastore($this->workspace, $this->datastore, [
+            'enabled' => true,
         ]);
 
         $this->assertTrue($result);
     }
 
     #[Test]
-    public function it_returns_datastore_data(): void
+    public function it_returns_false_when_updating_nonexistent_datastore(): void
     {
-        $this->mockClient->method('request')
-            ->with('GET', '/rest/workspaces/testworkspace/datastores/teststore.json')
-            ->willReturn(['status' => 200, 'body' => json_encode(['dataStore' => ['name' => 'teststore']])]);
+        $result = $this->client->datastoreManager->updateDatastore($this->workspace, 'missing_ds', [
+            'enabled' => false,
+        ]);
 
-        $datastore = $this->datastoreManager->getDatastore('testworkspace', 'teststore');
-
-        $this->assertEquals('teststore', $datastore['dataStore']['name']);
+        $this->assertFalse($result);
     }
 
+    #[Test]
+    public function it_can_delete_a_datastore(): void
+    {
+        $this->client->datastoreManager->createPostGISDatastore($this->workspace, $this->datastore, [
+            'host'     => getenv( 'GEOSERVER_DB_HOST' ) ?: 'db',
+            'port'     => getenv( 'GEOSERVER_DB_PORT' ) ?: '5432',
+            'database' => getenv( 'GEOSERVER_DB_NAME' ) ?: 'db',
+            'user'     => getenv( 'GEOSERVER_DB_USER' ) ?: 'db',
+            'passwd'   => getenv( 'GEOSERVER_DB_PASSWORD' ) ?: 'db',
+        ]);
+
+        $deleted = $this->client->datastoreManager->deleteDatastore($this->workspace, $this->datastore);
+        $this->assertTrue($deleted);
+        $this->assertFalse($this->client->datastoreManager->datastoreExists($this->workspace, $this->datastore));
+    }
+
+    #[Test]
+    public function it_returns_false_when_deleting_nonexistent_datastore(): void
+    {
+        $result = $this->client->datastoreManager->deleteDatastore($this->workspace, 'nonexistent_ds');
+        $this->assertFalse($result);
+    }
+
+    #[Test]
+    public function it_throws_exception_for_invalid_workspace(): void
+    {
+        $this->expectException(GeoServerException::class);
+        $this->client->datastoreManager->getDatastores('@@@');
+    }
 }

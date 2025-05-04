@@ -1,63 +1,71 @@
-# GeoServerClient – Roadmap
+# GeoServerClient Roadmap
 
-This document outlines the planned features and major milestones for the GeoServerClient project.
-
----
-
-## 🚀 Short-Term Goals (v1.4.0)
-
-- **Style Management Enhancements**
-    - Upload new SLD styles (`createStyle()`)
-    - Assign styles to layers
-    - Full PHPUnit 12 tests for styles
-- **Improved Error Handling**
-    - Introduce `GeoServerException` class for structured error responses
-- **Client Improvements**
-    - Add support for HTTP timeouts and future token-based authentication
-- **Documentation**
-    - Expand README and Wiki with detailed examples for style management
+A development plan for future versions of the GeoServerClient PHP library.
 
 ---
 
-## 🌟 Mid-Term Goals (v1.5.0 / v1.6.0)
+## ✅ v1.5.0 (Released)
 
-- **WFS-T Transaction Support**
-    - Insert, update, delete features via WFS-T (OGC standards)
-- **GeoJSON Upload**
-    - Allow uploading GeoJSON files to create FeatureTypes and layers
-- **Advanced Layer Configuration**
-    - Manage default styles
-    - Manage LayerGroups
-
----
-
-## 🚀 Long-Term Goals (v2.0.0)
-
-- **OpenAPI Integration**
-    - Parse GeoServer OpenAPI (Swagger) specification dynamically
-- **Plugin System**
-    - Support for extended GeoServer APIs (e.g., Security, Monitoring modules)
-- **Admin Client**
-    - Lightweight web-based admin UI using this client
+- Full CRUD support for Workspaces, Datastores, FeatureTypes, Layers, and Styles
+- Upload SLD styles via `Slug:` header and proper `Content-Type`
+- Assign styles to layers using REST
+- Unified `GeoServerException` handling across all managers
+- Live tests with GeoServer availability detection (DDEV-ready)
+- 100% PHPUnit 12 test coverage
 
 ---
 
-## 📅 Release Plan
+## 🚧 v1.6.0 (Planned)
 
-| Version | Goal |
-|:--------|:-----|
-| v1.4.0 | Full Style Management + better error handling |
-| v1.5.0 | WFS-T basic support |
-| v1.6.0 | GeoJSON import |
-| v2.0.0 | Plugins, OpenAPI parsing, Admin-Client (optional)
+### API Features
+- Add `styleExists()` support for workspace-specific styles
+- Add `getStyleSLD()` and `updateStyleSLD()` methods for raw SLD handling
+- Add support for listing available formats via `/rest/formats`
 
----
-
-## 📜 Notes
-
-- All versions follow [Semantic Versioning 2.0.0](https://semver.org/).
-- The roadmap may be updated based on community feedback and project priorities.
+### Testing & Tooling
+- Optional `.env.test.local` config for GeoServer test target
+- PHPUnit test coverage integration (CI-ready)
 
 ---
 
-*Let's build the best open-source GeoServer client together! 🚀*
+## 🧪 v1.7.0 – Experimental
+
+### WFS-T Support
+- Create `GeoServerWFSTransactionClient` (Insert/Update/Delete)
+- Support for GML and GeoJSON transactions
+- Auto-conversion of geometry types (Point, LineString, Polygon)
+
+### Advanced Layer Control
+- Get default style for a layer
+- Enable/disable layer visibility
+- Update layer metadata (title, abstract, keywords)
+
+---
+
+## 🗂 v1.8.0 – Internal Refactor
+
+### Code Organization
+- Move managers into namespace: `Hfelge\GeoServerClient\Manager`
+- Add abstract `BaseManager` with shared logic
+- Extract test helpers to `tests/support/TestCaseWithGeoServerClient.php`
+
+### Documentation
+- Create GitHub Pages or GitBook documentation site
+- Add auto-generated PHPDocs
+
+---
+
+## 🔒 v2.0.0 – Major Release
+
+### Breaking Changes
+- Switch from associative arrays to typed DTOs
+- Require PHP 8.3+ and strict types
+- Rename all `*_Exists()` methods to `exists*()` for consistency
+- Throw exceptions instead of returning false for unexpected states
+
+---
+
+## 💡 Contributions
+
+We welcome feature requests, bug reports, and pull requests.
+👉 [https://github.com/hfelge/geoserver-client](https://github.com/hfelge/geoserver-client)

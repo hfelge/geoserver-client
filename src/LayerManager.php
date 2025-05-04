@@ -5,76 +5,99 @@ namespace Hfelge\GeoServerClient;
 class LayerManager
 {
     public function __construct(
-        protected GeoServerClient $client
+        protected GeoServerClient $client,
     ) {}
 
     public function getLayers(): array
     {
-        $response = $this->client->request('GET', '/rest/layers.json');
-
-        if ($response['status'] !== 200) {
-            throw new \RuntimeException('Failed to get layers: ' . $response['body']);
+        try {
+            $response = $this->client->request('GET', '/rest/layers.json');
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            throw $e;
         }
-
-        return json_decode($response['body'], true);
     }
 
-    public function getLayer(string $layerName): array
+    public function getLayer(string $name): array|false
     {
-        $response = $this->client->request('GET', "/rest/layers/{$layerName}.json");
-
-        if ($response['status'] !== 200) {
-            throw new \RuntimeException('Failed to get layer: ' . $response['body']);
+        try {
+            $response = $this->client->request('GET', "/rest/layers/{$name}.json");
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
-
-        return json_decode($response['body'], true);
     }
 
-    public function layerExists(string $layerName): bool
+    public function layerExists(string $name): bool
     {
-        $response = $this->client->request('GET', "/rest/layers/{$layerName}.json");
-
-        if ($response['status'] === 200) {
+        try {
+            $this->client->request('GET', "/rest/layers/{$name}.json");
             return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
-
-        if ($response['status'] === 404) {
-            return false;
-        }
-
-        throw new \RuntimeException('Unexpected response checking layer existence: ' . $response['body']);
     }
 
-    public function publishLayer(string $workspace, string $datastore, string $featureTypeName): bool
-    {
-        // Trick: In GeoServer wird ein Layer automatisch veröffentlicht,
-        // sobald ein FeatureType registriert wird.
-        // Hier können wir optional noch einmal sicherstellen, dass er aktiviert ist.
-
-        $response = $this->client->request('POST', "/rest/workspaces/{$workspace}/datastores/{$datastore}/featuretypes", json_encode([
-                                                                                                                                         'featureType' => [
-                                                                                                                                             'name' => $featureTypeName
-                                                                                                                                         ]
-                                                                                                                                     ]));
-
-        return $response['status'] === 201;
-    }
-
-    public function updateLayer(string $layerName, array $updates): bool
+    public function publishLayer(string $layerName): bool
     {
         $payload = json_encode([
-                                   'layer' => $updates
+                                   'layer' => [
+                                       'enabled' => true,
+                                       'defaultStyle' => ['name' => 'default']
+                                   ]
                                ]);
 
-        $response = $this->client->request('PUT', "/rest/layers/{$layerName}", $payload);
+        try {
+            $this->client->request('PUT', "/rest/layers/{$layerName}", $payload);
+            return true;
+        } catch (GeoServerException $e) {
 
-        return $response['status'] === 200;
+            if (
+                in_array($e->statusCode, [400, 404], true) ||
+                ($e->statusCode === 500 && str_contains($e->getMessage(), 'because "original" is null'))
+            ) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
-    public function deleteLayer(string $layerName): bool
+    public function updateLayer(string $name, array $updates): bool
     {
-        $response = $this->client->request('DELETE', "/rest/layers/{$layerName}");
+        $payload = json_encode(['layer' => $updates]);
 
-        return $response['status'] === 200;
+        try {
+            $this->client->request('PUT', "/rest/layers/{$name}", $payload);
+            return true;
+        } catch (GeoServerException $e) {
+            if (
+                in_array($e->statusCode, [400, 404], true) ||
+                ($e->statusCode === 500 && str_contains($e->getMessage(), 'because "original" is null'))
+            ) {
+                return false;
+            }
+            throw $e;
+        }
+    }
+
+    public function deleteLayer(string $name, bool $recurse = true): bool
+    {
+        $query = $recurse ? '?recurse=true' : '';
+
+        try {
+            $this->client->request('DELETE', "/rest/layers/{$name}{$query}");
+            return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
+        }
     }
 }

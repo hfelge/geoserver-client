@@ -1,87 +1,103 @@
 <?php
 
-
 namespace Hfelge\GeoServerClient;
 
 class DatastoreManager
 {
     public function __construct(
         protected GeoServerClient $client,
-    ) {
-    }
+    ) {}
 
-
-    public function getDatastores( string $workspace ) : array
+    public function getDatastores(string $workspace): array
     {
-        $response = $this->client->request( 'GET', "/rest/workspaces/{$workspace}/datastores.json" );
-
-        if ( $response['status'] !== 200 ) {
-            throw new \RuntimeException( 'Failed to get datastores: ' . $response['body'] );
+        try {
+            $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores.json");
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            throw $e;
         }
-
-        return json_decode( $response['body'], TRUE );
     }
 
-    public function getDatastore(string $workspace, string $datastore): array
+    public function getDatastore(string $workspace, string $datastore): array|false
     {
-        $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}.json");
-
-        if ($response['status'] !== 200) {
-            throw new \RuntimeException('Failed to get datastore: ' . $response['body']);
+        try {
+            $response = $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}.json");
+            return json_decode($response['body'], true);
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
-
-        return json_decode($response['body'], true);
     }
 
-    public function datastoreExists( string $workspace, string $datastore ) : bool
+    public function datastoreExists(string $workspace, string $datastore): bool
     {
-        $response = $this->client->request( 'GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}.json" );
-
-        if ( $response['status'] === 200 ) {
-            return TRUE;
+        try {
+            $this->client->request('GET', "/rest/workspaces/{$workspace}/datastores/{$datastore}.json");
+            return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
         }
+    }
 
-        if ( $response['status'] === 404 ) {
-            return FALSE;
+    public function createPostGISDatastore(string $workspace, string $datastore, array $connectionParameters): bool
+    {
+        $payload = json_encode([
+                                   'dataStore' => [
+                                       'name' => $datastore,
+                                       'connectionParameters' => array_merge(
+                                           ['dbtype' => 'postgis'],
+                                           $connectionParameters
+                                       ),
+                                   ]
+                               ]);
+
+        try {
+            $this->client->request('POST', "/rest/workspaces/{$workspace}/datastores", $payload);
+            return true;
+        } catch (GeoServerException $e) {
+            if (
+                $e->statusCode === 409 ||
+                ($e->statusCode === 500 && str_contains($e->getMessage(), 'already exists'))
+            ) {
+                return false;
+            }
+            throw $e;
         }
-
-        throw new \RuntimeException( 'Unexpected response checking datastore existence: ' . $response['body'] );
     }
 
-    public function createPostGISDatastore( string $workspace, string $datastore, array $connectionParameters ) : bool
+
+    public function updateDatastore(string $workspace, string $datastore, array $updates): bool
     {
-        $payload = json_encode( [
-                                    'dataStore' => [
-                                        'name'                 => $datastore,
-                                        'connectionParameters' => array_merge(
-                                            [
-                                                'dbtype' => 'postgis',
-                                            ],
-                                            $connectionParameters
-                                        ),
-                                    ],
-                                ] );
+        $payload = json_encode(['dataStore' => $updates]);
 
-        $response = $this->client->request( 'POST', "/rest/workspaces/{$workspace}/datastores", $payload );
-
-        return $response['status'] === 201;
+        try {
+            $this->client->request('PUT', "/rest/workspaces/{$workspace}/datastores/{$datastore}", $payload);
+            return true;
+        } catch (GeoServerException $e) {
+            if (in_array($e->statusCode, [400, 404], true)) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
-    public function updateDatastore( string $workspace, string $datastore, array $updates ) : bool
+    public function deleteDatastore(string $workspace, string $datastore, bool $recurse = false): bool
     {
-        $payload  = json_encode( ['dataStore' => $updates] );
-        $response = $this->client->request( 'PUT', "/rest/workspaces/{$workspace}/datastores/{$datastore}", $payload );
+        $query = $recurse ? '?recurse=true' : '';
 
-        return $response['status'] === 200;
+        try {
+            $this->client->request('DELETE', "/rest/workspaces/{$workspace}/datastores/{$datastore}{$query}");
+            return true;
+        } catch (GeoServerException $e) {
+            if ($e->statusCode === 404) {
+                return false;
+            }
+            throw $e;
+        }
     }
-
-    public function deleteDatastore( string $workspace, string $datastore, bool $recurse = FALSE ) : bool
-    {
-        $query    = $recurse ? '?recurse=true' : '';
-        $response = $this->client->request( 'DELETE', "/rest/workspaces/{$workspace}/datastores/{$datastore}{$query}" );
-
-        return $response['status'] === 200;
-    }
-
-
 }

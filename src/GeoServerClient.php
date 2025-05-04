@@ -42,6 +42,45 @@ class GeoServerClient
         return $this->cachedAvailability;
     }
 
+    public function publishFeatureLayer(
+        string $workspace,
+        string $datastore,
+        array $featureTypeDefinition,
+        array $connectionParameters = []
+    ): bool {
+        if (!$this->workspaceManager->workspaceExists($workspace)) {
+            $this->workspaceManager->createWorkspace($workspace);
+        }
+
+        if (!$this->datastoreManager->datastoreExists($workspace, $datastore)) {
+            $defaultParams = [
+                'host'     => 'localhost',
+                'port'     => '5432',
+                'database' => 'gis',
+                'user'     => 'geo_user',
+                'passwd'   => 'secret',
+            ];
+
+            $this->datastoreManager->createPostGISDatastore(
+                $workspace,
+                $datastore,
+                array_merge($defaultParams, $connectionParameters)
+            );
+        }
+
+        $name = $featureTypeDefinition['name'] ?? null;
+        if (!$name) {
+            throw new \InvalidArgumentException("FeatureType 'name' is required.");
+        }
+
+        if (!$this->featureTypeManager->featureTypeExists($workspace, $datastore, $name)) {
+            $this->featureTypeManager->createFeatureType($workspace, $datastore, $featureTypeDefinition);
+        }
+
+        return $this->layerManager->publishLayer($name);
+    }
+
+
     public function request(string $method, string $url, ?string $body = null, array $headers = []): array
     {
         $ch = curl_init($this->baseUrl . $url);
@@ -51,11 +90,14 @@ class GeoServerClient
             'Accept: application/json',
         ];
 
+        // Aber NUR wenn nicht schon manuell gesetzt:
+        $allHeaders = $this->mergeHeaders($defaultHeaders, $headers);
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CUSTOMREQUEST  => strtoupper($method),
             CURLOPT_USERPWD        => "{$this->username}:{$this->password}",
-            CURLOPT_HTTPHEADER     => array_merge($defaultHeaders, $headers),
+            CURLOPT_HTTPHEADER     => $allHeaders,
         ]);
 
         if ($body !== null) {
@@ -80,5 +122,29 @@ class GeoServerClient
             'status' => $statusCode,
             'body'   => $responseBody,
         ];
+    }
+
+    private function mergeHeaders(array $defaultHeaders, array $customHeaders): array
+    {
+        $map = [];
+
+        // Zuerst: Standard-Header eintragen
+        foreach ($defaultHeaders as $header) {
+            [$name, $value] = explode(':', $header, 2);
+            $map[strtolower(trim($name))] = trim($value);
+        }
+
+        // Dann: Custom-Header eintragen (überschreibt ggf.)
+        foreach ($customHeaders as $header) {
+            [$name, $value] = explode(':', $header, 2);
+            $map[strtolower(trim($name))] = trim($value);
+        }
+
+        // Rückgabe im richtigen Format
+        return array_map(
+            fn($name, $value) => $name . ': ' . $value,
+            array_keys($map),
+            $map
+        );
     }
 }
