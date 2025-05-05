@@ -138,6 +138,44 @@ class DatastoreManagerTest extends TestCaseWithGeoServerClient
     }
 
     #[Test]
+    public function it_can_delete_datastore_with_dot_in_name(): void
+    {
+        $datastore = 'phpunit_ds.dot';
+
+        // Create workspace if not exists
+        if (!$this->client->workspaceManager->workspaceExists($this->workspace)) {
+            $this->client->workspaceManager->createWorkspace($this->workspace);
+        }
+
+        // Create datastore with dot
+        $created = $this->client->datastoreManager->createPostGISDatastore($this->workspace, $datastore, [
+            'host'     => getenv('GEOSERVER_DB_HOST')     ?: 'db',
+            'port'     => getenv('GEOSERVER_DB_PORT')     ?: '5432',
+            'database' => getenv('GEOSERVER_DB_NAME')     ?: 'db',
+            'user'     => getenv('GEOSERVER_DB_USER')     ?: 'db',
+            'passwd'   => getenv('GEOSERVER_DB_PASSWORD') ?: 'db',
+        ]);
+
+        $this->assertTrue($created);
+        $this->assertTrue($this->client->datastoreManager->datastoreExists($this->workspace, $datastore));
+
+        // Delete it
+        $deleted = $this->client->datastoreManager->deleteDatastore($this->workspace, $datastore);
+        $this->assertTrue($deleted);
+        $this->assertFalse($this->client->datastoreManager->datastoreExists($this->workspace, $datastore));
+    }
+
+    #[Test]
+    public function it_returns_false_when_deleting_dot_datastore_that_does_not_exist(): void
+    {
+        $datastore = 'not_existing.ds';
+
+        $result = $this->client->datastoreManager->deleteDatastore($this->workspace, $datastore);
+        $this->assertFalse($result);
+    }
+
+
+    #[Test]
     public function it_returns_false_when_deleting_nonexistent_datastore(): void
     {
         $result = $this->client->datastoreManager->deleteDatastore($this->workspace, 'nonexistent_ds');

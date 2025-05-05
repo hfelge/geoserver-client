@@ -88,10 +88,15 @@ class DatastoreManager
 
     public function deleteDatastore(string $workspace, string $datastore, bool $recurse = false): bool
     {
+        $datastorePath = str_contains($datastore, '.') ? "{$datastore}.xml" : $datastore;
         $query = $recurse ? '?recurse=true' : '';
 
         try {
-            $this->client->request('DELETE', "/rest/workspaces/{$workspace}/datastores/{$datastore}{$query}");
+            $this->client->request(
+                'DELETE',
+                "/rest/workspaces/{$workspace}/datastores/{$datastorePath}{$query}"
+            );
+
             return true;
         } catch (GeoServerException $e) {
             if ($e->statusCode === 404) {
