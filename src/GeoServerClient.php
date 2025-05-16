@@ -9,6 +9,7 @@ class GeoServerClient
     public FeatureTypeManager $featureTypeManager;
     public LayerManager       $layerManager;
     public StyleManager       $styleManager;
+    public UserManager       $userManager;
 
     protected ?bool $cachedAvailability = null;
 
@@ -24,6 +25,7 @@ class GeoServerClient
         $this->featureTypeManager = new FeatureTypeManager($this);
         $this->layerManager       = new LayerManager($this);
         $this->styleManager       = new StyleManager($this);
+        $this->userManager        = new UserManager($this);
     }
 
     public function isAvailable(bool $forceCheck = false): bool
