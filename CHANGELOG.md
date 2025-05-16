@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [1.6.0] - 2025-05-16
+
+### Added
+- Introduced `UserManager` with full CRUD operations for GeoServer users via REST security API
+- Added `GeoServerClient::publishFeatureLayer()` to simplify feature type and layer creation in one step
+- Added `GeoServerClient::isAvailable()` to verify GeoServer instance availability
+- New integration and unit tests for user management and feature publishing
+
+### Changed
+- Unified `GeoServerException` handling across all components including new modules
+
+### Security
+- Improved robustness and error reporting in security-related API endpoints (user operations)
+
 ## [1.5.1] - 2025-05-02
 
 ### Fixed

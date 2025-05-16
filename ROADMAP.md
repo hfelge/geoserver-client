@@ -4,31 +4,31 @@ A development plan for future versions of the GeoServerClient PHP library.
 
 ---
 
-## ✅ v1.5.0 (Released)
+## ✅ v1.6.0 (Released)
 
-- Full CRUD support for Workspaces, Datastores, FeatureTypes, Layers, and Styles
-- Upload SLD styles via `Slug:` header and proper `Content-Type`
-- Assign styles to layers using REST
-- Unified `GeoServerException` handling across all managers
-- Live tests with GeoServer availability detection (DDEV-ready)
-- 100% PHPUnit 12 test coverage
-
----
-
-## 🚧 v1.6.0 (Planned)
-
-### API Features
-- Add `styleExists()` support for workspace-specific styles
-- Add `getStyleSLD()` and `updateStyleSLD()` methods for raw SLD handling
-- Add support for listing available formats via `/rest/formats`
-
-### Testing & Tooling
-- Optional `.env.test.local` config for GeoServer test target
-- PHPUnit test coverage integration (CI-ready)
+- New `UserManager` for full CRUD operations on GeoServer users via the REST security API
+- Added `GeoServerClient::publishFeatureLayer()` for simplified feature + layer setup
+- Added `GeoServerClient::isAvailable()` to check server reachability
+- Improved internal exception handling with consistent `GeoServerException` usage
+- Additional live tests and extended PHPUnit coverage for new functionality
 
 ---
 
-## 🧪 v1.7.0 – Experimental
+## 🚧 v1.7.0 (Planned)
+
+- Full CRUD support for GeoServer Roles
+- Role listing, creation, updating, and deletion via REST security API
+
+---
+## 🚧 v1.8.0 (Planned)
+
+- Full CRUD support for GeoServer Groups
+- Group assignment to users and roles
+- Group listing, creation, updating, and deletion
+
+---
+
+## 🧪 v1.10.0 – Experimental
 
 ### WFS-T Support
 - Create `GeoServerWFSTransactionClient` (Insert/Update/Delete)
@@ -39,19 +39,6 @@ A development plan for future versions of the GeoServerClient PHP library.
 - Get default style for a layer
 - Enable/disable layer visibility
 - Update layer metadata (title, abstract, keywords)
-
----
-
-## 🗂 v1.8.0 – Internal Refactor
-
-### Code Organization
-- Move managers into namespace: `Hfelge\GeoServerClient\Manager`
-- Add abstract `BaseManager` with shared logic
-- Extract test helpers to `tests/support/TestCaseWithGeoServerClient.php`
-
-### Documentation
-- Create GitHub Pages or GitBook documentation site
-- Add auto-generated PHPDocs
 
 ---
 

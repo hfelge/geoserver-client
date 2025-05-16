@@ -1,6 +1,6 @@
 # GeoServer Client (PHP)
 
-A modern, lightweight PHP client for interacting with the GeoServer REST API (REST & SLD Upload).
+A modern, lightweight PHP client for interacting with the GeoServer REST API (REST, SLD Upload, and Security Management).
 
 ## Features
 
@@ -9,9 +9,11 @@ A modern, lightweight PHP client for interacting with the GeoServer REST API (RE
 - Manage GeoServer **FeatureTypes** (`get`, `exists`, `create`, `update`, `delete`)
 - Manage GeoServer **Layers** (`get`, `exists`, `publish`, `update`, `delete`)
 - Manage GeoServer **Styles**:
-    - `createWorkspaceStyle()` (SLD upload via Slug)
-    - `assignStyleToLayer()`
-    - `updateStyle()`, `deleteStyle()`, `styleExists()`
+  - `createWorkspaceStyle()` (SLD upload via Slug)
+  - `assignStyleToLayer()`
+  - `updateStyle()`, `deleteStyle()`, `styleExists()`
+- Manage GeoServer **Users**:
+  - `getUsers()`, `getUser()`, `createUser()`, `updateUserStatus()`, `deleteUser()`
 - Robust error handling with `GeoServerException`
 - GeoServer availability check via `isAvailable()`
 - 100% PHPUnit 12 test coverage
@@ -68,6 +70,12 @@ if (!$client->layerManager->layerExists('stadtgrenzen')) {
 $sld = file_get_contents(__DIR__ . '/style.sld');
 $client->styleManager->createWorkspaceStyle('example_ws', 'my_custom_style', $sld);
 $client->styleManager->assignStyleToLayer('stadtgrenzen', 'my_custom_style');
+
+// === USERS ===
+$client->userManager->createUser('demo_user', 'secure123');
+$users = $client->userManager->getUsers();
+$client->userManager->updateUserStatus('demo_user', false); // disable user
+$client->userManager->deleteUser('demo_user');
 
 ```
 
