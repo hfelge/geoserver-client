@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+# [1.7.0] - 2025-05-18
+
+### Added
+- Full `RoleManager` with:
+    - Role creation, deletion and lookup
+    - Role assignment to users and groups
+    - Retrieval of roles for users and groups
+- Methods: `getRoles()`, `roleExists()`, `getRolesForUser()`, `getRolesForGroup()`,
+  `assignRoleToUser()`, `removeRoleFromUser()`, `assignRoleToGroup()`, `removeRoleFromGroup()`
+
+### Changed
+- Removed dependency on unstable `/roles/{role}` endpoint
+- Improved role existence checks and test behavior for unknown users/groups
+
+### Tests
+- 100% test coverage for `RoleManager`
 
 # [1.6.0] - 2025-05-16
 
