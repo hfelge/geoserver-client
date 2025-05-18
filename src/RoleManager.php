@@ -51,7 +51,7 @@ class RoleManager
     public function deleteRole( string $roleName ) : bool
     {
         try {
-            $this->client->request( 'DELETE', '/rest/security/roles/' . rawurlencode( $roleName ) );
+            $this->client->request( 'DELETE', '/rest/security/roles/role/' . rawurlencode( $roleName ) );
             return TRUE;
         } catch ( GeoServerException $e ) {
             if ( $e->statusCode === 404 ) {
