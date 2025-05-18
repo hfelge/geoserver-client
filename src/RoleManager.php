@@ -59,27 +59,29 @@ class RoleManager
         }
     }
 
-    public function getUsersWithRole( string $roleName ) : array|false
+    public function getRolesForUser( string $username ) : array|false
     {
         try {
-            $response = $this->client->request( 'GET', '/rest/security/roles/' . rawurlencode( $roleName ) . '/users' );
+            $response = $this->client->request( 'GET', '/rest/security/roles/user/' . rawurlencode( $username ) );
+
             return json_decode( $response['body'], TRUE );
         } catch ( GeoServerException $e ) {
             if ( $e->statusCode === 404 ) {
-                return FALSE;
+                return FALSE; // Benutzer nicht gefunden oder keine Rollen
             }
             throw $e;
         }
     }
 
-    public function getGroupsWithRole( string $roleName ) : array|false
+    public function getRolesForGroup( string $groupName ) : array|false
     {
         try {
-            $response = $this->client->request( 'GET', '/rest/security/roles/' . rawurlencode( $roleName ) . '/groups' );
+            $response = $this->client->request( 'GET', '/rest/security/roles/group/' . rawurlencode( $groupName ) );
+
             return json_decode( $response['body'], TRUE );
         } catch ( GeoServerException $e ) {
             if ( $e->statusCode === 404 ) {
-                return FALSE;
+                return FALSE; // Benutzer nicht gefunden oder keine Rollen
             }
             throw $e;
         }
