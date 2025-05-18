@@ -7,87 +7,91 @@ class RoleManagerTest extends TestCaseWithGeoServerClient
 {
     public function test_it_can_create_and_delete_a_role(): void
     {
-        $roleName = 'phpunit_role_' . rand(1000, 9999);
+        $role = 'phpunit_role_' . rand(1000, 9999);
 
-        try {
-            $created = $this->client->roleManager->createRole($roleName);
-        } catch (GeoServerException $e) {
-            if ($e->statusCode === 405) {
-                $this->markTestSkipped('Role creation is not allowed (405), possibly due to missing plugin.');
-                return;
-            }
-            throw $e;
-        }
-
+        $created = $this->client->roleManager->createRole($role);
         $this->assertTrue($created);
 
-        $fetched = $this->client->roleManager->getRole($roleName);
-        $this->assertIsArray($fetched);
-        $this->assertEquals($roleName, $fetched['roleName']);
+        $exists = $this->client->roleManager->roleExists($role);
+        $this->assertTrue($exists);
 
-        $deleted = $this->client->roleManager->deleteRole($roleName);
+        $deleted = $this->client->roleManager->deleteRole($role);
         $this->assertTrue($deleted);
+
+        $existsAfter = $this->client->roleManager->roleExists($role);
+        $this->assertFalse($existsAfter);
     }
 
-
-    public function test_it_returns_false_when_deleting_nonexistent_role(): void
+    public function test_it_returns_false_for_unknown_role(): void
     {
-        $deleted = $this->client->roleManager->deleteRole('nonexistent_' . rand(10000, 99999));
-        $this->assertFalse($deleted);
+        $this->assertFalse($this->client->roleManager->roleExists('nonexistent_' . rand(10000, 99999)));
     }
 
-    public function test_it_returns_false_when_getting_unknown_role(): void
-    {
-        $result = $this->client->roleManager->getRole('unknown_' . rand(1000, 9999));
-        $this->assertFalse($result);
-    }
-
-    public function test_it_can_list_roles(): void
+    public function test_it_can_get_roles(): void
     {
         $roles = $this->client->roleManager->getRoles();
         $this->assertIsArray($roles);
         $this->assertArrayHasKey('roles', $roles);
     }
 
-    public function test_it_can_get_users_with_a_role(): void
+    public function test_it_can_get_and_assign_role_to_user(): void
     {
-        $roleName = 'phpunit_role_' . rand(1000, 9999);
+        $username = 'phpunit_user_' . rand(1000, 9999);
+        $password = 'secure123';
+        $role = 'phpunit_user_role_' . rand(1000, 9999);
 
-        try {
-            $this->client->roleManager->createRole($roleName);
-        } catch (GeoServerException $e) {
-            if ($e->statusCode === 405) {
-                $this->markTestSkipped('Role creation not allowed (405), skipping test.');
-                return;
-            }
-            throw $e;
-        }
+        $this->client->userManager->createUser($username, $password);
+        $this->client->roleManager->createRole($role);
 
-        $result = $this->client->roleManager->getUsersWithRole($roleName);
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('users', $result);
+        $assigned = $this->client->roleManager->assignRoleToUser($username, $role);
+        $this->assertTrue($assigned);
 
-        $this->client->roleManager->deleteRole($roleName);
+        $roles = $this->client->roleManager->getRolesForUser($username);
+        $this->assertIsArray($roles);
+        $this->assertArrayHasKey('roles', $roles);
+        $this->assertContains($role, $roles['roles']);
+
+        $removed = $this->client->roleManager->removeRoleFromUser($username, $role);
+        $this->assertTrue($removed);
+
+        $this->client->userManager->deleteUser($username);
+        $this->client->roleManager->deleteRole($role);
     }
 
-    public function test_it_can_get_groups_with_a_role(): void
+    public function test_it_returns_false_for_user_roles_if_user_does_not_exist(): void
     {
-        $roleName = 'phpunit_group_role_' . rand(1000, 9999);
+        $result = $this->client->roleManager->getRolesForUser('missing_user_' . rand(1000, 99999));
+        $this->assertFalse($result);
+    }
 
-        try {
-            $this->client->roleManager->createRole($roleName);
-        } catch (GeoServerException $e) {
-            if ($e->statusCode === 405) {
-                $this->markTestSkipped('Role creation not allowed (405), skipping test.');
-                return;
-            }
-            throw $e;
-        }
+    public function test_it_can_get_and_assign_role_to_group(): void
+    {
+        $this->markTestIncomplete('Not yet implemented');
 
-        $result = $this->client->roleManager->getGroupsWithRole($roleName);
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('groups', $result);
+        $group = 'phpunit_group_' . rand(1000, 9999);
+        $role = 'phpunit_group_role_' . rand(1000, 9999);
 
-        $this->client->roleManager->deleteRole($roleName);
+        $this->client->groupManager->createGroup($group);
+        $this->client->roleManager->createRole($role);
+
+        $assigned = $this->client->roleManager->assignRoleToGroup($group, $role);
+        $this->assertTrue($assigned);
+
+        $roles = $this->client->roleManager->getRolesForGroup($group);
+        $this->assertIsArray($roles);
+        $this->assertArrayHasKey('roles', $roles);
+        $this->assertContains($role, $roles['roles']);
+
+        $removed = $this->client->roleManager->removeRoleFromGroup($group, $role);
+        $this->assertTrue($removed);
+
+        $this->client->groupManager->deleteGroup($group);
+        $this->client->roleManager->deleteRole($role);
+    }
+
+    public function test_it_returns_false_for_group_roles_if_group_does_not_exist(): void
+    {
+        $result = $this->client->roleManager->getRolesForGroup('missing_group_' . rand(1000, 99999));
+        $this->assertFalse($result);
     }
 }

@@ -64,10 +64,17 @@ class RoleManager
         try {
             $response = $this->client->request( 'GET', '/rest/security/roles/user/' . rawurlencode( $username ) );
 
-            return json_decode( $response['body'], TRUE );
+            $data = json_decode( $response['body'], TRUE );
+
+            if ( !isset( $data['roles'] ) || (isset( $data['roles'] ) && empty( $data['roles'] )) ) {
+                return FALSE;
+            }
+
+            return $data;
+
         } catch ( GeoServerException $e ) {
             if ( $e->statusCode === 404 ) {
-                return FALSE; // Benutzer nicht gefunden oder keine Rollen
+                return FALSE;
             }
             throw $e;
         }
@@ -78,12 +85,84 @@ class RoleManager
         try {
             $response = $this->client->request( 'GET', '/rest/security/roles/group/' . rawurlencode( $groupName ) );
 
-            return json_decode( $response['body'], TRUE );
+            $data = json_decode( $response['body'], TRUE );
+
+            if ( !isset( $data['roles'] ) || (isset( $data['roles'] ) && empty( $data['roles'] )) ) {
+                return FALSE;
+            }
+            return $data;
+
         } catch ( GeoServerException $e ) {
             if ( $e->statusCode === 404 ) {
-                return FALSE; // Benutzer nicht gefunden oder keine Rollen
+                return FALSE;
             }
             throw $e;
         }
     }
+
+    public function assignRoleToUser( string $username, string $roleName ) : bool
+    {
+        try {
+            $this->client->request(
+                'POST',
+                '/rest/security/roles/role/' . rawurlencode( $roleName ) . '/user/' . rawurlencode( $username )
+            );
+            return TRUE;
+        } catch ( GeoServerException $e ) {
+            if ( $e->statusCode === 404 ) {
+                return FALSE; // Benutzer oder Rolle nicht gefunden
+            }
+            throw $e;
+        }
+    }
+
+    public function removeRoleFromUser( string $username, string $roleName ) : bool
+    {
+        try {
+            $this->client->request(
+                'DELETE',
+                '/rest/security/roles/role/' . rawurlencode( $roleName ) . '/user/' . rawurlencode( $username )
+            );
+            return TRUE;
+        } catch ( GeoServerException $e ) {
+            if ( $e->statusCode === 404 ) {
+                return FALSE; // Benutzer oder Rolle nicht gefunden
+            }
+            throw $e;
+        }
+    }
+
+    public function assignRoleToGroup( string $groupName, string $roleName ) : bool
+    {
+        try {
+            $this->client->request(
+                'POST',
+                '/rest/security/roles/role/' . rawurlencode( $roleName ) . '/group/' . rawurlencode( $groupName )
+            );
+            return TRUE;
+        } catch ( GeoServerException $e ) {
+            if ( $e->statusCode === 404 ) {
+                return FALSE; // Gruppe oder Rolle nicht gefunden
+            }
+            throw $e;
+        }
+    }
+
+    public function removeRoleFromGroup( string $groupName, string $roleName ) : bool
+    {
+        try {
+            $this->client->request(
+                'DELETE',
+                '/rest/security/roles/role/' . rawurlencode( $roleName ) . '/group/' . rawurlencode( $groupName )
+            );
+            return TRUE;
+        } catch ( GeoServerException $e ) {
+            if ( $e->statusCode === 404 ) {
+                return FALSE;
+            }
+            throw $e;
+        }
+    }
+
+
 }
