@@ -22,17 +22,15 @@ class RoleManager
         }
     }
 
-    public function getRole( string $roleName ) : array|false
+    public function roleExists( string $roleName ) : bool
     {
-        try {
-            $response = $this->client->request( 'GET', '/rest/security/roles/' . rawurlencode( $roleName ) );
-            return json_decode( $response['body'], TRUE );
-        } catch ( GeoServerException $e ) {
-            if ( $e->statusCode === 404 ) {
-                return FALSE;
-            }
-            throw $e;
+        $roles = $this->getRoles();
+
+        if ( !is_array( $roles ) || !isset( $roles['roles'] ) ) {
+            return FALSE;
         }
+
+        return in_array( $roleName, $roles['roles'], TRUE );
     }
 
     public function createRole( string $roleName ) : bool
