@@ -35,22 +35,14 @@ class RoleManager
         }
     }
 
-    public function createRole(string $roleName): bool
+    public function createRole( string $roleName ) : bool
     {
         try {
-            $data = ['roleName' => $roleName];
-
-            $this->client->request(
-                         'POST',
-                         '/rest/security/roles',
-                         json_encode($data),
-                 ['Content-Type: application/json'],
-            );
-
-            return true;
-        } catch (GeoServerException $e) {
-            if ($e->statusCode === 405 || $e->statusCode === 409) {
-                return false;
+            $this->client->request( 'POST', '/rest/security/roles/role/' . rawurlencode( $roleName ) );
+            return TRUE;
+        } catch ( GeoServerException $e ) {
+            if ( str_contains( $e->getMessage(), 'already exists' ) ) {
+                return FALSE;
             }
             throw $e;
         }
