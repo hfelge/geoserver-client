@@ -2,29 +2,15 @@
 
 A development plan for future versions of the GeoServerClient PHP library.
 
----
 
-## ✅ v1.6.0 (Released)
+## 🚧 v1.9.0 (Planned)
 
-- New `UserManager` for full CRUD operations on GeoServer users via the REST security API
-- Added `GeoServerClient::publishFeatureLayer()` for simplified feature + layer setup
-- Added `GeoServerClient::isAvailable()` to check server reachability
-- Improved internal exception handling with consistent `GeoServerException` usage
-- Additional live tests and extended PHPUnit coverage for new functionality
-
----
-
-## 🚧 v1.7.0 (Planned)
-
-- Full CRUD support for GeoServer Roles
-- Role listing, creation, updating, and deletion via REST security API
-
----
-## 🚧 v1.8.0 (Planned)
-
-- Full CRUD support for GeoServer Groups
-- Group assignment to users and roles
-- Group listing, creation, updating, and deletion
+- Full support for GeoServer Layer Groups
+  - Create, update, list, and delete layer groups
+  - Support for named and anonymous layer groups
+  - Configure mode (SINGLE, NAMED, CONTAINER) and styles
+- Internal handling via new `LayerGroupManager`
+- Test coverage for group publishing and validation
 
 ---
 
